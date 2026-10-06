@@ -127,7 +127,7 @@ def plot_network(ax, pitch, nodes, edges, scales, title, subtitle="", display_na
     ax.text(40, 123, subtitle, ha="center", va="bottom", fontsize=8, color=MUTED)
 
 
-def _draw_legend(ax, scales):
+def _draw_legend(ax, scales, logo=None):
     """Footer: two colour bars, node sizes, link widths and credits (axes coordinates 0-1)."""
     def heading(x, text):
         ax.text(x, 0.95, text, fontsize=8, color=TEXT, va="top", transform=ax.transAxes)
@@ -157,16 +157,27 @@ def _draw_legend(ax, scales):
                 solid_capstyle="butt", transform=ax.transAxes)
         ax.text(x + 0.0225, 0.05, f"{value}", ha="center", fontsize=7, color=MUTED, transform=ax.transAxes)
 
-    ax.text(1, 0.05, "Data: StatsBomb open data\nxT grid: Karun Singh", ha="right", va="bottom",
+        # Credits: the data provider's logo (if given) and the xT grid
+    if logo is not None:
+        heading(0.88, "Data")
+        logo_ax = ax.inset_axes([0.88, 0.35, 0.12, 0.4])
+        logo_ax.imshow(plt.imread(logo))
+        logo_ax.set_anchor("W")     # left-align the image inside its box
+        logo_ax.axis("off")
+        credits = "xT grid: Karun Singh"
+    else:
+        credits = "Data: StatsBomb open data\nxT grid: Karun Singh"
+    ax.text(1, 0.05, credits, ha="right", va="bottom",
             fontsize=7, color=MUTED, linespacing=1.5, transform=ax.transAxes)
 
 
 def plot_formations(nodes, edges, formation_minutes, formations, title, subtitle,
-                    display_names=None, min_edge_p90=4):
+                    display_names=None, min_edge_p90=4, logo=None):
     """Side-by-side pass networks, one per formation, with a title block and legend. Returns the figure.
 
     Links with fewer than `min_edge_p90` completed passes per 90 are hidden.
     `display_names` maps StatsBomb player names to the shorter names shown in labels.
+    `logo` is an optional path to the data provider's logo, shown in the footer credits.
     """
     edges = edges[edges["completed_p90"] >= min_edge_p90]
     scales = Scales.from_tables(nodes, edges)
@@ -197,5 +208,5 @@ def plot_formations(nodes, edges, formation_minutes, formations, title, subtitle
     title_ax.text(0, 0.3, subtitle, fontsize=10, color=MUTED, va="center")
     title_ax.axhline(0.05, xmin=0, xmax=1, color=TEXT, lw=0.8)
 
-    _draw_legend(axs["endnote"], scales)
+    _draw_legend(axs["endnote"], scales, logo)
     return fig
