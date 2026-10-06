@@ -1,0 +1,18 @@
+# Virtual environment
+.venv/
+
+# Downloaded / cached data
+data/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Package build info (created by `pip install -e .`)
+*.egg-info/
