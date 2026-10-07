@@ -4,6 +4,20 @@ import pandas as pd
 
 SENDING_OFF = ["Red Card", "Second Yellow"]
 
+POSITION_GROUPS = {
+    position: group
+    for group, positions in {
+        "Goalkeeper": ["Goalkeeper"],
+        "Centre-back": ["Right Center Back", "Center Back", "Left Center Back"],
+        "Full-back": ["Right Back", "Left Back", "Right Wing Back", "Left Wing Back"],
+        "Defensive midfielder": ["Right Defensive Midfield", "Center Defensive Midfield", "Left Defensive Midfield"],
+        "Central midfielder": ["Right Center Midfield", "Center Midfield", "Left Center Midfield"],
+        "Attacking midfielder": ["Right Attacking Midfield", "Center Attacking Midfield", "Left Attacking Midfield"],
+        "Winger": ["Right Midfield", "Left Midfield", "Right Wing", "Left Wing"],
+        "Striker": ["Striker", "Right Center Forward", "Left Center Forward", "Secondary Striker"],
+    }.items()
+    for position in positions
+}
 
 def _sent_off(events: pd.DataFrame) -> pd.Series:
     """True for events where a player was sent off (cards are on Foul Committed or Bad Behaviour events)."""
@@ -129,3 +143,27 @@ def main_player_by_position(position_minutes: pd.DataFrame, formation_minutes: p
     )
     top["share"] = top["minutes"] / top["formation"].map(formation_minutes["minutes"])
     return top
+
+def main_positions(events: pd.DataFrame, team_id: int) -> pd.DataFrame:
+    """Each player's most-played position and position group, by minutes, indexed by player name.
+
+    The group is chosen by total minutes across its positions, so a forward split between
+    Left and Right Center Forward still counts as a Striker. `events` must be in match and event order.
+    """
+    events = events.assign(
+        formation=formation_at_each_event(events, team_id),
+        duration=event_durations(events),
+    )
+    minutes = minutes_by_position(events, team_id).groupby(["player", "position"])["minutes"].sum()
+    minutes = minutes.reset_index().assign(group=lambda m: m["position"].map(POSITION_GROUPS))
+
+    def most_minutes(by: str) -> pd.DataFrame:
+        per_player = minutes.groupby(["player", by])["minutes"].sum().reset_index()
+        return per_player.sort_values("minutes", ascending=False).drop_duplicates("player").set_index("player")
+
+    position, group = most_minutes("position"), most_minutes("group")
+    return pd.DataFrame({
+        "position": position["position"],
+        "position_share": position["minutes"] / minutes.groupby("player")["minutes"].sum(),
+        "position_group": group["group"],
+    })
