@@ -64,3 +64,7 @@ def load_events(match_ids, cache_dir: Path) -> pd.DataFrame:
         .sort_values(["match_id", "index"])
         .reset_index(drop=True)
     )
+
+def load_lineups(match_id: int) -> dict[str, pd.DataFrame]:
+    """Lineups of one match, as {team name: players table} (with player_nickname, country, jersey_number)."""
+    return _quiet(sb.lineups, match_id=match_id)
