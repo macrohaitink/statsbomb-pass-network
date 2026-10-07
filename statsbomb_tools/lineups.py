@@ -14,7 +14,7 @@ POSITION_GROUPS = {
         "Central midfielder": ["Right Center Midfield", "Center Midfield", "Left Center Midfield"],
         "Attacking midfielder": ["Right Attacking Midfield", "Center Attacking Midfield", "Left Attacking Midfield"],
         "Winger": ["Right Midfield", "Left Midfield", "Right Wing", "Left Wing"],
-        "Striker": ["Striker", "Right Center Forward", "Left Center Forward", "Secondary Striker"],
+        "Striker": ["Striker", "Right Center Forward", "Left Center Forward", "Secondary Striker", "Center Forward"],
     }.items()
     for position in positions
 }
