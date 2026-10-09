@@ -68,3 +68,18 @@ def load_events(match_ids, cache_dir: Path) -> pd.DataFrame:
 def load_lineups(match_id: int) -> dict[str, pd.DataFrame]:
     """Lineups of one match, as {team name: players table} (with player_nickname, country, jersey_number)."""
     return _quiet(sb.lineups, match_id=match_id)
+
+def apply_per_team(matches: pd.DataFrame, cache_dir: Path, func) -> pd.DataFrame:
+    """Run func(events, team_id, team_matches) for every team in `matches` and stack the results.
+
+    Events are loaded one team at a time, so a whole league season never has to fit in memory.
+    Each result gets `team_id` and `team` columns.
+    """
+    teams = matches[["home_team_id", "home_team"]].drop_duplicates().sort_values("home_team")
+    results = []
+    for team_id, team in teams.itertuples(index=False):
+        print(team)
+        played = team_matches(matches, team_id)
+        events = load_events(played["match_id"], cache_dir)
+        results.append(func(events, team_id, played).assign(team_id=team_id, team=team))
+    return pd.concat(results)

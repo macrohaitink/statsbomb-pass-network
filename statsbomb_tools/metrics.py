@@ -9,7 +9,9 @@ BOX_X, BOX_HALF_WIDTH = 102, 22  # penalty box: x >= 102 and y within 40 +/- 22
 ON_TARGET = ["Goal", "Saved", "Saved to Post"]
 SET_PIECES = ["Corner", "Free Kick", "Throw-in", "Goal Kick", "Kick Off"]
 PROGRESSIVE = 0.75  # a progressive pass or carry ends at most 75% as far from goal as it started
-
+TOUCH_TYPES = ["Pass", "Ball Receipt*", "Carry", "Shot", "Dribble"]  # on-ball events used for heatmaps
+PER_90 = ["np_goals", "npxg", "np_shots", "assists", "xa", "key_passes", "box_receptions",
+          "successful_dribbles", "progressive_passes", "progressive_carries"]
 
 def _xy(locations: pd.Series) -> np.ndarray:
     """A column of [x, y] lists as an (n, 2) array."""
@@ -68,3 +70,22 @@ def event_counts(events: pd.DataFrame, team_id: int) -> pd.DataFrame:
     })
     counts.index = counts.index.astype(int)
     return counts.fillna(0)
+
+def player_metrics(totals: pd.DataFrame) -> pd.DataFrame:
+    """Per-90 rates and ratios from season totals (after combine_clubs), one row per player."""
+    metrics = totals[PER_90].div(totals["minutes"], axis=0).mul(90)
+    metrics["xg_per_shot"] = totals["npxg"] / totals["np_shots"]
+    metrics["shots_on_target_pct"] = 100 * totals["np_shots_on_target"] / totals["np_shots"]
+    metrics["pass_completion_pct"] = 100 * totals["completed_passes"] / totals["passes"]
+    return metrics
+
+
+def percentiles(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Percentile rank (0-100) of each player on each metric, within the players in `metrics`."""
+    return metrics.rank(pct=True).mul(100)
+
+
+def touch_locations(events: pd.DataFrame, player_id: int) -> pd.DataFrame:
+    """x, y of a player's on-ball events (StatsBomb coordinates, attacking towards x = 120)."""
+    on_ball = events[(events["player_id"] == player_id) & events["type"].isin(TOUCH_TYPES)]
+    return pd.DataFrame(_xy(on_ball["location"]), columns=["x", "y"])
